@@ -29,7 +29,6 @@ jobs:
             +quit 2>&1 || true)
 
           BUILD_ID=$(echo "$OUTPUT" \
-            | grep -A 1 '"public"' \
             | grep '"buildid"' \
             | awk '{print $2}' \
             | tr -d '"')
