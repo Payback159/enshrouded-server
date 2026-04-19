@@ -17,11 +17,18 @@ jobs:
       - name: Query current Steam build ID for Enshrouded Dedicated Server
         id: steam
         run: |
-          BUILD_ID=$(docker run --rm cm2network/steamcmd \
+          # Download steamcmd directly (avoids Docker pull overhead / rate limits)
+          mkdir -p /tmp/steamcmd
+          curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" \
+            | tar xzf - -C /tmp/steamcmd
+
+          OUTPUT=$(/tmp/steamcmd/steamcmd.sh \
             +login anonymous \
             +app_info_update 1 \
             +app_info_print 2278520 \
-            +quit 2>/dev/null \
+            +quit 2>&1 || true)
+
+          BUILD_ID=$(echo "$OUTPUT" \
             | grep -A 1 '"public"' \
             | grep '"buildid"' \
             | awk '{print $2}' \
@@ -29,6 +36,8 @@ jobs:
 
           if [ -z "$BUILD_ID" ]; then
             echo "ERROR: Could not extract build ID from steamcmd output" >&2
+            echo "--- last 50 lines ---" >&2
+            echo "$OUTPUT" | tail -50 >&2
             exit 1
           fi
 
