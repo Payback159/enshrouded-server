@@ -14,7 +14,6 @@ on:
 
 permissions:
   packages: write
-  actions: write
   contents: read
 
 env:
@@ -63,11 +62,4 @@ jobs:
             org.opencontainers.image.created=${{ inputs.build_date }}
             com.enshrouded.steam.build-id=${{ inputs.build_id }}
 
-      - name: Update last known Steam build ID
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh variable set LAST_STEAM_BUILD_ID \
-            --repo "${{ github.repository }}" \
-            --body "${{ inputs.build_id }}"
-          echo "Updated LAST_STEAM_BUILD_ID to ${{ inputs.build_id }}"
+

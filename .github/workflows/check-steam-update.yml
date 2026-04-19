@@ -43,15 +43,18 @@ jobs:
           echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
           echo "Detected Steam build ID: $BUILD_ID"
 
-      - name: Read last known build ID
+      - name: Read build ID from latest image label
         id: last
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          LAST_ID=$(gh variable get LAST_STEAM_BUILD_ID \
-            --repo "${{ github.repository }}" 2>/dev/null || echo "0")
+          # Read the com.enshrouded.steam.build-id label from the :latest image.
+          # Falls back to "0" if the image does not exist yet (first ever build).
+          LAST_ID=$(skopeo inspect \
+            docker://ghcr.io/payback159/enshrouded-server:latest \
+            --format '{{index .Labels "com.enshrouded.steam.build-id"}}' \
+            2>/dev/null || echo "0")
+          LAST_ID=${LAST_ID:-0}
           echo "last_id=$LAST_ID" >> "$GITHUB_OUTPUT"
-          echo "Last known build ID: $LAST_ID"
+          echo "Last known build ID (from image label): $LAST_ID"
 
       - name: Trigger image build if build ID changed
         if: steps.steam.outputs.build_id != steps.last.outputs.last_id
