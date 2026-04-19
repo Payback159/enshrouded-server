@@ -1,0 +1,62 @@
+name: Check Steam Update
+
+on:
+  schedule:
+    # Every 6 hours
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query current Steam build ID for Enshrouded Dedicated Server
+        id: steam
+        run: |
+          BUILD_ID=$(docker run --rm cm2network/steamcmd \
+            +login anonymous \
+            +app_info_update 1 \
+            +app_info_print 2278520 \
+            +quit 2>/dev/null \
+            | grep -A 1 '"public"' \
+            | grep '"buildid"' \
+            | awk '{print $2}' \
+            | tr -d '"')
+
+          if [ -z "$BUILD_ID" ]; then
+            echo "ERROR: Could not extract build ID from steamcmd output" >&2
+            exit 1
+          fi
+
+          echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
+          echo "Detected Steam build ID: $BUILD_ID"
+
+      - name: Read last known build ID
+        id: last
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LAST_ID=$(gh variable get LAST_STEAM_BUILD_ID \
+            --repo "${{ github.repository }}" 2>/dev/null || echo "0")
+          echo "last_id=$LAST_ID" >> "$GITHUB_OUTPUT"
+          echo "Last known build ID: $LAST_ID"
+
+      - name: Trigger image build if build ID changed
+        if: steps.steam.outputs.build_id != steps.last.outputs.last_id
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BUILD_DATE=$(date -u +"%Y.%m.%d")
+          echo "New build detected: ${{ steps.last.outputs.last_id }} -> ${{ steps.steam.outputs.build_id }}"
+          gh workflow run build-push-image.yml \
+            --repo "${{ github.repository }}" \
+            --field build_id=${{ steps.steam.outputs.build_id }} \
+            --field build_date=${BUILD_DATE}
+
+      - name: No update available
+        if: steps.steam.outputs.build_id == steps.last.outputs.last_id
+        run: echo "Already on latest build ID ${{ steps.steam.outputs.build_id }}, skipping build."

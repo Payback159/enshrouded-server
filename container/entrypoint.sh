@@ -46,22 +46,10 @@ else
 fi
 
 ########################################
-# SteamCMD update
+# Server binary
 ########################################
 
-# Fix potential bad steam update state
-rm -f "$ENSHROUDED_PATH"/steamapps/appmanifest_*.acf >/dev/null 2>&1 || true
-
-echo "$(timestamp) INFO: Updating Enshrouded Dedicated Server"
-if ! "${STEAMCMD_PATH}/steamcmd.sh" \
-    +@sSteamCmdForcePlatformType windows \
-    +force_install_dir "$ENSHROUDED_PATH" \
-    +login anonymous \
-    +app_update "$STEAM_APP_ID" validate \
-    +quit; then
-    echo "$(timestamp) ERROR: steamcmd update failed"
-    exit 1
-fi
+echo "$(timestamp) INFO: Starting Enshrouded Dedicated Server (binary baked at image build time)"
 
 ########################################
 # Config handling
