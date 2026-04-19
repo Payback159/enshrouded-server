@@ -19,7 +19,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/enshrouded-server
+  IMAGE_NAME: payback159/enshrouded-server
 
 jobs:
   build-push:
