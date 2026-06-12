@@ -22,9 +22,17 @@ jobs:
           curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" \
             | tar xzf - -C /tmp/steamcmd
 
+          echo "Triggering App-Info-Update on Steam..."
+          # 1. Call: Trigger update so that the Steam Connection Manager requests the data from the Steam servers and updates the local cache
+          /tmp/steamcmd/steamcmd.sh +login anonymous +app_info_update 1 +quit
+
+          # wait 5 seconds to give steamcmd some time to fetch the latest data before we query it again 
+          sleep 5
+
+          echo "Querying current build ID..."
+          # 2. Call: Now read the freshly synchronized data and extract the build ID for our app (2278520 = Enshrouded Dedicated Server)
           OUTPUT=$(/tmp/steamcmd/steamcmd.sh \
             +login anonymous \
-            +app_info_update 1 \
             +app_info_print 2278520 \
             +quit 2>&1 || true)
 
